@@ -2,6 +2,8 @@
 Module for implimenting a card game
 """
 
+import random
+
 class Card():
     """
     Class for implimenting a playing card from a standard deck.
@@ -57,15 +59,39 @@ class Deck():
     """
     Class for implimenting a standard playing card deck.
     """
-    cards = list()
 
     def __init__(self):
         """
         Initialize a standard 52 card deck.
         """
+        self.cards = list()
         for value in Card.VALUES.keys():
             for suit in Card.SUITS.keys():
                 self.cards.append(Card(value, suit))
     
+    def __eq__(self, other):
+        """
+        Equals method
+        """
+
+        # Not a deck object
+        if not isinstance(other, self.__class__):
+            return False
+        
+        # Different number of cards
+        if len(self.cards) != len(other.cards):
+            return False
+        
+        # Check if each card position is the same
+        for index in range(len(self.cards)):
+            if self.cards[index] != other.cards[index]:
+                return False
+        
+        return True
+    
     def shuffle(self):
-        pass
+        """
+        Randomly shuffles the cards in the deck
+        """
+        random.shuffle(self.cards)
+

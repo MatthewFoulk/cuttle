@@ -97,6 +97,35 @@ class testDeck(unittest.TestCase):
         for value in Card.VALUES.keys():
             for suit in Card.SUITS.keys():
                 self.assertIn(Card(value, suit), deck.cards)
+        
+        # Verify the deck length is 52
+        self.assertTrue(len(deck.cards) == 52)
+
+        # Verify the deck length is 52 afer making another deck
+        # messed this up by creating class variable instead of an
+        # instance variable
+        deck2 = Deck()
+        self.assertTrue(len(deck.cards) == 52)
+        self.assertTrue(len(deck2.cards) == 52) 
+    
+    def test__eq__(self):
+
+        # Compare new decks unshuffled
+        deck = Deck()
+        deck2 = Deck()
+        self.assertTrue(deck == deck2)
+
+    
+    def testShuffle(self):
+        
+        # Not sure how to test, so I'm checking to see if they are equal
+        # because I assume it is very unlikely that they would be in 
+        # the same order after being shuffled
+        deck = Deck()
+        deck2 = Deck()
+        Deck.shuffle(deck2)
+        self.assertFalse(deck == deck2)
+        
 
 
 if __name__ == "__main__":
