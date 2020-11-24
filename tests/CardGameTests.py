@@ -45,6 +45,21 @@ class TestCard(unittest.TestCase):
         strCard = str(card)
         self.assertEqual(strCard, "Jack of Hearts")
 
+        # Queen and Diamonds
+        card = Card(12, 2)
+        strCard = str(card)
+        self.assertEqual(strCard, "Queen of Diamonds")
+
+        # King and Spades
+        card = Card(13, 0)
+        strCard = str(card)
+        self.assertEqual(strCard, "King of Spades")
+
+        # Ten and Hearts
+        card = Card(10, 1)
+        strCard = str(card)
+        self.assertEqual(strCard, "10 of Hearts")
+
 
 
 
