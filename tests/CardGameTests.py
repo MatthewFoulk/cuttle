@@ -1,8 +1,14 @@
 """
 Module for testing various aspects of the Cuttle project
 """
-
+import os, sys
 import unittest
+
+# I don't exactly understand this, but it allows me to import from the parent directory
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+sys.path.append(parentdir)
+
 from CardGame import *
 
 class TestCard(unittest.TestCase):
@@ -28,8 +34,16 @@ class TestCard(unittest.TestCase):
 
     
     def test__str__(self):
+
+        # Ace and Clubs
         card = Card(1, 3)
-        assert
+        strCard = str(card)
+        self.assertEqual(strCard, "Ace of Clubs")
+
+        # Jack and Hearts
+        card = Card(11, 1)
+        strCard = str(card)
+        self.assertEqual(strCard, "Jack of Hearts")
 
 
 
