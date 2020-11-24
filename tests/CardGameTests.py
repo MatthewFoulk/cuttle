@@ -157,7 +157,40 @@ class testDeck(unittest.TestCase):
             card = deck.getCardAt(-1)
         with self.assertRaises(ValueError):
             card = deck.getCardAt(deck.getNumCards())
+    
+    def testDeal(self):
+
+        # Normal Deal, unshuffled deck
+        deck = Deck()
+        hands = deck.deal(3, 2)
+        # Every hand is the same, specified length
+        for hand in hands:
+            self.assertTrue(len(hand) == 2)
+
+        # Illegal argument types
+        with self.assertRaises(TypeError):
+            hands = deck.deal("one", 1)
+        with self.assertRaises(TypeError):
+            hands = deck.deal(1, 1.2)
         
+        # Illegal argument values
+        with self.assertRaises(ValueError):
+            hands = deck.deal(0, 10)
+        with self.assertRaises(ValueError):
+            hands = deck.deal(-1, 3)
+        with self.assertRaises(ValueError):
+            hands = deck.deal(1, 0)
+        with self.assertRaises(ValueError):
+            hands = deck.deal(1, -1)
+        with self.assertRaises(ValueError):
+            hands = deck.deal(10, 10)
+
+        # Test that every card is dealt
+        deck = Deck()
+        hands = deck.deal(4, 13)
+        self.assertTrue(len(hands) == 4)
+        self.assertTrue(len(hands[0]) == 13)
+        self.assertTrue(hands[3][12] == Card(13,3))
 
 
 if __name__ == "__main__":
