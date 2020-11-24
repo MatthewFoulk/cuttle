@@ -94,4 +94,11 @@ class Deck():
         Randomly shuffles the cards in the deck
         """
         random.shuffle(self.cards)
+    
+    def getCardAt(self, position):
+        """
+        Returns the card at the given position in the deck
+        (0 indexed, i.e. position=0 returns the first card)
+        """
+        return self.cards[position]
 

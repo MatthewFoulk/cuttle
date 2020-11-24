@@ -125,6 +125,15 @@ class testDeck(unittest.TestCase):
         deck2 = Deck()
         Deck.shuffle(deck2)
         self.assertFalse(deck == deck2)
+
+    def testGetCardAt(self):
+
+        # Unshuffled, deck should be in order
+        deck = Deck()
+        firstCard = deck.getCardAt(0)
+        self.assertTrue(firstCard == Card(1, 0))
+        lastCard = deck.getCardAt(len(deck.cards)-1)
+        self.assertTrue(lastCard == Card(13, 3))
         
 
 
