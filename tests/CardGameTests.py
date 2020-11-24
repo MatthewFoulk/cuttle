@@ -20,7 +20,7 @@ class TestCard(unittest.TestCase):
         self.assertEqual(card.value, 1, "Card value should be 1")
         self.assertEqual(card.suit, 1, "Suit value should be 1")
 
-        # Illegal cards
+        # Illegal card values
         with self.assertRaises(ValueError):
             card = Card(-1, 1)
         with self.assertRaises(ValueError):
@@ -31,6 +31,17 @@ class TestCard(unittest.TestCase):
             card = Card(10, 4)
         with self.assertRaises(ValueError):
             card = Card(14, 4)
+        
+        # Illegal argument types
+        with self.assertRaises(TypeError):
+            card = Card("Jack", 2)
+        with self.assertRaises(TypeError):
+            card = Card(1.2, 2)
+        with self.assertRaises(TypeError):
+            card = Card(2, 200.1)
+        with self.assertRaises(TypeError):
+            card = Card(1, "Hearts")
+        
 
     
     def test__str__(self):
