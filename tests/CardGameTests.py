@@ -88,11 +88,15 @@ class TestCard(unittest.TestCase):
         self.assertTrue(card1 == card2)
 
 
-# class testDeck(unittest.TestCase):
+class testDeck(unittest.TestCase):
 
-#     # def test__init__(self):
-#     #     deck = Deck()
+    def test__init__(self):
         
+        # Verify that every card is in the deck
+        deck = Deck()
+        for value in Card.VALUES.keys():
+            for suit in Card.SUITS.keys():
+                self.assertIn(Card(value, suit), deck.cards)
 
 
 if __name__ == "__main__":
