@@ -2,17 +2,15 @@
 Module for implimenting a card game
 """
 
-# Holds 
-SUITS = {0: "Spades", 1: "Hearts", 2: "Diamonds", 3: "Clubs"}
-VALUES = {1: "Ace", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7",
-            8: "8", 9: "9", 10: "10", 11: "Jack", 12: "Queen", 13: "King"}
-
-
 class Card():
     """
     Class for implimenting a playing card from a standard deck.
     Each card has both a suit and value.
     """
+
+    SUITS = {0: "Spades", 1: "Hearts", 2: "Diamonds", 3: "Clubs"}
+    VALUES = {1: "Ace", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7",
+            8: "8", 9: "9", 10: "10", 11: "Jack", 12: "Queen", 13: "King"}
 
     def __init__(self, value, suit):
         """
@@ -39,7 +37,19 @@ class Card():
         """
         String representation of a card object
         """
-        return f"{VALUES[self.value]} of {SUITS[self.suit]}"
+        return f"{Card.VALUES[self.value]} of {Card.SUITS[self.suit]}"
+    
+    def __eq__(self, other):
+        """
+        Equals method
+        """
+        if not isinstance(other, self.__class__):
+            return False
+
+        return (self.value == other.value and self.suit == other.suit)
+            
+
+
         
 
 
@@ -47,9 +57,15 @@ class Deck():
     """
     Class for implimenting a standard playing card deck.
     """
+    cards = list()
 
     def __init__(self):
-        pass
+        """
+        Initialize a standard 52 card deck.
+        """
+        for value in Card.VALUES.keys():
+            for suit in Card.SUITS.keys():
+                self.cards.append(Card(value, suit))
     
     def shuffle(self):
         pass
