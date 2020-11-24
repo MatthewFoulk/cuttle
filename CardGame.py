@@ -3,7 +3,7 @@ Module for implimenting a card game
 """
 
 # Holds 
-SUITS = {0: "Spade", 1: "Heart", 2: "Diamond", 3: "Club"}
+SUITS = {0: "Spades", 1: "Hearts", 2: "Diamonds", 3: "Clubs"}
 VALUES = {1: "Ace", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7",
             8: "8", 9: "9", 10: "10", 11: "Jack", 12: "Queen", 13: "King"}
 
