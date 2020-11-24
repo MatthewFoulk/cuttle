@@ -13,7 +13,7 @@ from CardGame import *
 
 class TestCard(unittest.TestCase):
 
-    def testInitialization(self):
+    def test__init__(self):
 
         # Simple test
         card = Card(1, 1)
@@ -60,7 +60,39 @@ class TestCard(unittest.TestCase):
         strCard = str(card)
         self.assertEqual(strCard, "10 of Hearts")
 
+    def test__eq__(self):
 
+        # Different cards
+        card1 = Card(1, 1)
+        card2 = Card(2, 2)
+        self.assertFalse(card1 == card2)
+
+        # Same cards
+        card1 = Card(12, 0)
+        card2 = Card(12, 0)
+        self.assertTrue(card1 == card2)
+
+        # Same suit different values
+        card1 = Card(11, 3)
+        card2 = Card(5, 3)
+        self.assertFalse(card1 == card2)
+
+        # Same value different suit
+        card1 = Card(4, 1)
+        card2 = Card(4, 2)
+        self.assertFalse(card1 == card2)
+
+        # Exactly the same card object (aliasing)
+        card1 = Card(3, 2)
+        card2 = card1
+        self.assertTrue(card1 == card2)
+
+
+# class testDeck(unittest.TestCase):
+
+#     # def test__init__(self):
+#     #     deck = Deck()
+        
 
 
 if __name__ == "__main__":
