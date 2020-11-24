@@ -67,8 +67,8 @@ class Deck():
         Initialize a standard 52 card deck.
         """
         self.cards = list()
-        for value in Card.VALUES.keys():
-            for suit in Card.SUITS.keys():
+        for suit in Card.SUITS.keys():
+            for value in Card.VALUES.keys():
                 self.cards.append(Card(value, suit))
     
     def __eq__(self, other):
@@ -112,6 +112,13 @@ class Deck():
                 remaining cards. You tried {position}""")
 
         return self.cards[position]
+
+    def removeCardAt(self, position):
+        """
+        Removes the card at the given position from self.cards
+        """
+        self.cards.pop(position)
+
     
     def getNumCards(self):
         """
@@ -119,7 +126,7 @@ class Deck():
         """
         return len(self.cards)
 
-    def deal(self, numCards, players) :
+    def deal(self, players, numCards) :
         """
         Deal out cards determined by the number of cards in each hand and
         the number of players to deal to.
@@ -134,10 +141,10 @@ class Deck():
         elif not isinstance(players, int):
             raise TypeError(f"""Illegal argument type: players must be of type int. 
                 You tried type {type(players)}""")
-        elif players >= 0:
+        elif players <= 0:
             raise ValueError(f"""Illegal number of players attempted: Must be greater than 0. You
                 tried {players}""")
-        elif numCards >= 0:
+        elif numCards <= 0:
             raise ValueError(f"""Illegal number of cards attempted: Must be greater than 0. You
                 tried {numCards}""")
         elif players * numCards > self.getNumCards():
@@ -145,7 +152,15 @@ class Deck():
                 than or equal to the number of cards remaining in the deck. You tried to deal 
                 {players * numCards} cards and there are {self.getNumCards()} remaining""")
 
-        hands = list()
+        # Initialize list of lists to hold players hands
+        hands = [[] for player in range(players)]
 
-        # for player in range(players):
+        # Deals cards like a normal human
+        # i.e. dealing one card to each person before repeating
+        for card in range(numCards):
+            for player in range(players):
+                hands[player].append(self.getCardAt(0)) # Add to playeres hand
+                self.removeCardAt(0) # Remove it because it's being dealt
+        
+        return hands
 
