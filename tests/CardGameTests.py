@@ -145,6 +145,18 @@ class testDeck(unittest.TestCase):
         self.assertTrue(firstCard == Card(1, 0))
         lastCard = deck.getCardAt(len(deck.cards)-1)
         self.assertTrue(lastCard == Card(13, 3))
+
+        # Illegal argument type
+        with self.assertRaises(TypeError):
+            card = deck.getCardAt("one")
+        with self.assertRaises(TypeError):
+            card = deck.getCardAt(0.1)
+        
+        # Illegal position values
+        with self.assertRaises(ValueError):
+            card = deck.getCardAt(-1)
+        with self.assertRaises(ValueError):
+            card = deck.getCardAt(deck.getNumCards())
         
 
 
