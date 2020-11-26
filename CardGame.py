@@ -10,7 +10,7 @@ class Card():
     Each card has both a suit and value.
     """
 
-    SUITS = {0: "Spades", 1: "Hearts", 2: "Diamonds", 3: "Clubs"}
+    SUITS = {0: "Clubs", 1: "Diamonds", 2: "Hearts", 3: "Spades"}
     VALUES = {1: "Ace", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7",
             8: "8", 9: "9", 10: "10", 11: "Jack", 12: "Queen", 13: "King"}
 
@@ -39,6 +39,8 @@ class Card():
 
         self.value = value
         self.suit = suit
+        self.imageInHand = None
+        self.imageOnBoard = None
     
     def __str__(self):
         """
@@ -55,6 +57,26 @@ class Card():
             return False
 
         return (self.value == other.value and self.suit == other.suit)
+    
+    def __gt__(self, other):
+        """
+        Greater Than Method:
+        """
+        if not isinstance(other, self.__class__):
+            raise TypeError(f"""Illegal argument type. You can only compare a card with another card
+                object. You tried to compare with a {type(other)}""")
+        if self.value > other.value:
+            return True
+        elif self.value == other.value:
+            if self.suit > other.suit:
+                return True
+        return False
+    
+    def getImageFileName(self):
+        """
+        Returns the name of the image file representing this card
+        """
+        return Card.SUITS[self.suit] + Card.VALUES[self.value] + ".gif"
 
 
 class Deck():
@@ -113,12 +135,12 @@ class Deck():
 
         return self.cards[position]
 
-    def removeCardAt(self, position):
+    def drawCardAt(self, position):
         """
-        Removes the card at the given position from self.cards
+        Removes the card at the given position from the deck
+        and returns it
         """
-        self.cards.pop(position)
-
+        return self.cards.pop(position)
     
     def getNumCards(self):
         """
@@ -159,8 +181,6 @@ class Deck():
         # i.e. dealing one card to each person before repeating
         for card in range(numCards):
             for player in range(players):
-                hands[player].append(self.getCardAt(0)) # Add to playeres hand
-                self.removeCardAt(0) # Remove it because it's being dealt
+                hands[player].append(self.drawCardAt(0))
         
         return hands
-
