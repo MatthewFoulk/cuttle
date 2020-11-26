@@ -49,27 +49,27 @@ class TestCard(unittest.TestCase):
         # Ace and Clubs
         card = Card(1, 3)
         strCard = str(card)
-        self.assertEqual(strCard, "Ace of Clubs")
+        self.assertEqual(strCard, "Ace of Spades")
 
-        # Jack and Hearts
+        # Jack and Diamonds
         card = Card(11, 1)
         strCard = str(card)
-        self.assertEqual(strCard, "Jack of Hearts")
+        self.assertEqual(strCard, "Jack of Diamonds")
 
-        # Queen and Diamonds
+        # Queen and Hearts
         card = Card(12, 2)
         strCard = str(card)
-        self.assertEqual(strCard, "Queen of Diamonds")
+        self.assertEqual(strCard, "Queen of Hearts")
 
-        # King and Spades
+        # King and Clubs
         card = Card(13, 0)
         strCard = str(card)
-        self.assertEqual(strCard, "King of Spades")
+        self.assertEqual(strCard, "King of Clubs")
 
-        # Ten and Hearts
+        # Ten and Diamonds
         card = Card(10, 1)
         strCard = str(card)
-        self.assertEqual(strCard, "10 of Hearts")
+        self.assertEqual(strCard, "10 of Diamonds")
 
     def test__eq__(self):
 
@@ -97,6 +97,15 @@ class TestCard(unittest.TestCase):
         card1 = Card(3, 2)
         card2 = card1
         self.assertTrue(card1 == card2)
+    
+    # TODO
+    def test__gt__(self):
+        pass
+
+    def testGetImageFileName(self):
+        card = Card(1, 1)
+        image = card.getImageFileName()
+        self.assertTrue(image == "DiamondsAce.gif") 
 
 
 class testDeck(unittest.TestCase):
@@ -157,6 +166,10 @@ class testDeck(unittest.TestCase):
             card = deck.getCardAt(-1)
         with self.assertRaises(ValueError):
             card = deck.getCardAt(deck.getNumCards())
+    
+    # TODO
+    def testDrawCardAt(self):
+        pass
     
     def testDeal(self):
 
