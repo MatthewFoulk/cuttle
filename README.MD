@@ -7,6 +7,10 @@ One to two paragraph statement about your product and what it does.
 
 ![](header.png)
 
+## Rules
+
+Read the rules for Cuttle on [Pagat.com](https://www.pagat.com/combat/cuttle.html)
+
 ## Installation
 
 First, start by closing the repository:
@@ -48,7 +52,7 @@ python driver.py
 ```
 
 Once these steps are successfully done, a new window will open with an instance of the
-Cuttle game ready for you play and enjoy!
+Cuttle game ready for you to play and enjoy!
 
 ## Meta
 
