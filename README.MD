@@ -72,8 +72,8 @@ Distributed under the MIT license. See ``LICENSE`` for more information.
 
 ## Extra Info
 
-Start Date: 11/24/2020
-End Date: 12/1/2020
+Start Date: 11/24/2020  
+End Date: 12/1/2020  
 
 This project was originally supposed to be my first partner project with my sister 
 [Kelly Foulk](https://github.com/klfoulk16), but I made it my own (sorry Kelly, we
