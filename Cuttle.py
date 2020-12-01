@@ -1,92 +1,475 @@
 
 import sys
+import random
 
 import pygame
 
 from CardGame import *
-
-# Directory where images for the game board are stored
-# e.g. card images
-IMAGES_FILE_DIRECTORY = "images/"
-
-# Back of card image file name
-BACK_OF_CARD_IMAGE_FILE = "RedBackVertical.gif"
-
-# Pygame display dimensions
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-SCREEN_DIM = (SCREEN_WIDTH, SCREEN_HEIGHT)
-
-# Card image dimensions (originally 71x96)
-CARD_IN_HAND_WIDTH = 71
-CARD_IN_HAND_HEIGHT = 96
-CARD_IN_HAND_DIM = (CARD_IN_HAND_WIDTH, CARD_IN_HAND_HEIGHT)
-
-CARD_ON_BOARD_WIDTH = int(CARD_IN_HAND_WIDTH * .9)
-CARD_ON_BOARD_HEIGHT = int(CARD_IN_HAND_HEIGHT * .9)
-CARD_ON_BOARD_DIM = (CARD_ON_BOARD_WIDTH, CARD_ON_BOARD_HEIGHT)
-
-# Player hand positions on board
-CURR_PLAYER_HAND_X = int(SCREEN_WIDTH * 0.5)
-CURR_PLAYER_HAND_Y = int(SCREEN_HEIGHT - (1.25 * CARD_IN_HAND_HEIGHT))
-OTHER_PLAYER_HAND_X = int(SCREEN_WIDTH * .5)
-OTHER_PLAYER_HAND_Y = int((.25 * CARD_IN_HAND_HEIGHT))
-
-# Deck position on board
-DECK_X = int(SCREEN_WIDTH - (CARD_ON_BOARD_WIDTH * 1.25))
-DECK_Y = int((SCREEN_HEIGHT * .5) - CARD_ON_BOARD_HEIGHT)  
-DECK_POS = (DECK_X, DECK_Y)
-
-# Discard pile position on board
-DISCARD_X = int(SCREEN_WIDTH - (CARD_ON_BOARD_WIDTH * 1.25))
-DISCARD_Y = int(SCREEN_HEIGHT * 0.5)
-DISCARD_POS = (DISCARD_X, DISCARD_Y)
-
-# Pygame fonts
-pygame.font.init()
-FONT = pygame.font.SysFont('Comic Sans MS', 30)
-
-# Colors RGB
-GREEN = (0, 153, 0)
-WHITE = (255, 255, 255)
+from Gui import *
 
 class Player():
 
-    def __init__(self, game = None):
+    def __init__(self):
         self.hand = []
-        self.pointCards = []
+        self.pointsCards = []
         self.permCards = []
-        self.points = 0
-        self.game = game
+        self.jacks = {} # Dictionary with card keys that have list of jack cards attached to them 
+        self.score = 0
+        self.handVisible = False # 8's make opp hand visible
+        self.pointsNeededToWin = 21
+        self.queenProtection = False # Queens protect against two's and jacks
+        self.selectedCard = None 
+        self.turnFinished = False
+
+        # True if in the middle of playing one of these cards
+        self.playingTwo = False
+        self.playingThree = False
+        self.playingSeven = False
+        self.playingJack = False
+        self.scuttling = False
+
+    def getNumCardsInJacks(self):
+        return len(self.jacks)
 
     def getNumCardsInHand(self):
         return len(self.hand)
     
-    def setGame(self, game):
-        self.game = game
+    def getNumCardsInPointsCards(self):
+        return len(self.pointsCards)
     
-    def drawCard(self):
-        self.game.currPlayer.hand.append(self.game.deck.drawCardAt(0)) 
+    def getNumCardsInPermCards(self):
+        return len(self.permCards)
+    
+    def removeCardFromHand(self, card):
+        self.hand.remove(card)
+
+    def removeCardFromPointsCards(self, card):
+        self.pointsCards.remove(card)
+    
+    def removeCardFromPermCards(self, card):
+        self.permCards.remove(card)
+    
+    def removeCardFromJacks(self, card):
+        self.jacks.pop(card)
+    
+    def removeJackFromJacks(self, card):
+        self.jacks[card].pop(0)
+    
+    def addCardToHand(self, card):
+        self.hand.append(card)
+    
+    def addCardToPermCards(self, card):
+        self.permCards.append(card)
+    
+    def addCardToPointsCards(self, card):
+        self.pointsCards.append(card)
+    
+    def playPointsCard(self):
+        self.addCardToPointsCards(self.selectedCard)
+        self.removeCardFromHand(self.selectedCard)
+        self.turnFinished = True
+
+    def drawCard(self, deck):
+        self.hand.append(deck.drawCardAt(0)) 
+    
+    def playAce(self, otherPlayer, discardPile):
+        """
+        Discard all points cards and attached jacks
+        """
+        for card in self.pointsCards:
+            self.discardCard(discardPile, card)
+        for card in otherPlayer.pointsCards:
+            otherPlayer.discardCard(discardPile, card)
+        for card in self.jacks.keys():
+            for jack in self.jacks[card]:
+                self.discardCard(discardPile, jack)
+        for card in otherPlayer.jacks.keys():
+            for jack in otherPlayer.jacks[card]:
+                otherPlayer.discardCard(discardPile, jack)
+        
+        # Remove all cards from points
+        self.pointsCards = []
+        otherPlayer.pointsCards = []
+        self.jacks = {}
+        otherPlayer.jacks = {}
+    
+    def playNormalTwo(self, otherPlayer, card, discardPile, currPlayer=False, isJack=False):
+        """
+        Use a two to remove a permanent effect card
+        """
+        self.discardCard(discardPile, self.selectedCard)
+        self.removeCardFromHand(self.selectedCard)
+
+        # Card being removed from otherPlayer
+        if not currPlayer:
+
+            # Card being removed is a jack
+            if isJack:
+
+                # Discard the jack
+                otherPlayer.discardCard(discardPile, otherPlayer.jacks[card][0])
+                otherPlayer.removeJackFromJacks(card) # Remove the jack from other's jacks
+
+                # Add the jacks to the curr player if any remaining
+                if (len(otherPlayer.jacks[card]) > 0):
+                    self.jacks[card] = otherPlayer.jacks[card]
+                
+                # Remove from other's points and add to curr
+                otherPlayer.removeCardFromPointsCards(card)
+                self.addCardToPointsCards(card)
+
+                # Remove card from other's jacks
+                otherPlayer.removeCardFromJacks(card)
+
+            # Remove Non jack perm card
+            else:
+                
+                # Discard the cadr being 'twoed'
+                otherPlayer.discardCard(discardPile, card)
+                otherPlayer.removeCardFromPermCards(card)
+
+                # If 8, reset curr player's hand visibility
+                if card.value == 8:
+                    self.handVisible = False
+                
+                # If king, reset other player's points needed to win
+                elif card.value == Card.NAME_TO_VALUE["King"]:
+                    otherPlayer.playKing()
+                
+                # If queen, reset other player's queen protection
+                elif card.value == Card.NAME_TO_VALUE["Queen"]:
+                    otherPlayer.queenProtection = False
+        
+        # Card being removed is from current player (whoops why would they do that...)
+        else:
+
+            # Card being removed is a jack
+            if isJack:
+                
+                # Discard the jack
+                self.discardCard(discardPile, self.jacks[card][0])
+                self.removeJackFromJacks(card)
+
+                # Add the card to the other player's jacks if any jacks remain
+                if (len(self.jacks[card]) > 0):
+                    otherPlayer.jacks[card] = self.jacks[card]
+                
+                # Remove the card from curr points and add to others
+                self.removeCardFromPointsCards(card)
+                otherPlayer.addCardToPointsCards(card)
+
+                self.removeCardFromJacks(card) # Remove card from your own jacks
+            
+            # Remove Non jack perm card
+            else:
+                # Discard the card being 'twoed'
+                self.discardCard(discardPile, card)
+                self.removeCardFromPermCards(card)
+
+                # If 8, reset other player's hand visibility
+                if card.value == 8:
+                    otherPlayer.handVisible = False
+                
+                # If king, Reset curr points needed to win
+                elif card.value == Card.NAME_TO_VALUE["King"]:
+                    self.playKing()
+
+                # if queen, removed current's own protection
+                elif card.value == Card.NAME_TO_VALUE["Queen"]:
+                    self.queenProtection = False
+
+        self.turnFinished = True
+
+    def playThree(self, card, discardPile):
+        """
+        Add a card from the discard to the hand
+        """
+
+        # Discard three and remove from hand
+        self.discardCard(discardPile, self.selectedCard)
+        self.removeCardFromHand(self.selectedCard)
+
+        # Remove card from discard pile and add to hand
+        self.removeCardFromDiscard(discardPile, card)
+        self.addCardToHand(card)
+
+        self.playingThree = False
+        self.turnFinished = True
+        
+    
+    def playFour(self, otherPlayer, discardPile):
+        """
+        Randomly discard two cards from opponents hand
+        """
+
+        # One card remaining, so can only remove one
+        if otherPlayer.getNumCardsInHand() == 1:
+            cardToRemove = otherPlayer.hand[0]
+            otherPlayer.discardCard(discardPile, cardToRemove)
+            otherPlayer.removeCardFromHand(otherPlayer.hand[0])
+
+        # Randomly discard two cards from opponent
+        else:
+            numCardsInHand = otherPlayer.getNumCardsInHand()
+            firstCardToRemove = otherPlayer.hand[random.randint(0, numCardsInHand - 1)]
+            secondCardToRemove = otherPlayer.hand[random.randint(0, numCardsInHand - 1)]
+
+            # If second card choice is the same as the first
+            # Choose again until its a different card
+            while (secondCardToRemove == firstCardToRemove):
+                secondCardToRemove = otherPlayer.hand[random.randint(0, numCardsInHand - 1)]
+
+            otherPlayer.discardCard(discardPile, firstCardToRemove)
+            otherPlayer.removeCardFromHand(firstCardToRemove)
+            otherPlayer.discardCard(discardPile, secondCardToRemove)
+            otherPlayer.removeCardFromHand(secondCardToRemove)
+    
+    def playFive(self, deck, handLimit):
+        """
+        Draw two cards, or one if hand is currently one less than max
+        """
+        self.drawCard(deck)
+
+        if (handLimit > self.getNumCardsInHand()):
+            self.drawCard(deck)
+    
+    def playSix(self, otherPlayer, discardPile):
+        """
+        Discard all permanent effect cards (jacks included)
+        """
+        
+        for card in self.permCards:
+            self.discardCard(discardPile, card)
+        for card in self.jacks.keys():
+            self.discardCard(discardPile, card)
+            # Return card to original player
+            if len(self.jacks[card]) % 2 != 0:
+                self.removeCardFromPointsCards(card)
+                otherPlayer.addCardToPointsCards(card)
+        for card in otherPlayer.permCards:
+            otherPlayer.discardCard(discardPile, card)
+        for card in otherPlayer.jacks.keys():
+            otherPlayer.discardCard(discardPile, card)
+            # Return card to original player
+            if len(otherPlayer.jacks[card]) % 2 != 0:
+                otherPlayer.removeCardFromPointsCards(card)
+                self.addCardToPointsCards(card)
+
+        # Reset perm effects
+        self.queenProtection = False
+        self.pointsNeededToWin = 21
+        self.handVisible = False
+        otherPlayer.queenProtection = False
+        otherPlayer.pointsNeededToWin = 21
+        otherPlayer.handVisible = False
+
+        self.permCards = []
+        self.jacks = {}
+        otherPlayer.permCards = []
+        otherPlayer.jacks = {}
+
+    def playSeven(self, otherPlayer, deck, discardPile):
+
+        self.drawCard(deck)
+        self.selectedCard = self.hand[self.getNumCardsInHand() - 1] # Get the newest card
+
+        # Continue to Draw cards until one is drawn that can be played
+        while(self.selectedCard.value == Card.NAME_TO_VALUE["Jack"] and
+            (otherPlayer.getNumCardsInPointsCards() + self.getNumCardsInPointsCards() == 0)):
+            self.drawCard(deck)
+            self.selectedCard = self.hand[self.getNumCardsInHand() - 1] # Get the newest card
+
+        self.playingSeven = True
+
+    def playOneOffCard(self, otherPlayer, deck, discardPile, handLimit):
+
+        # If no more actions needed (e.g. for a 2,3, or 7), then finish playing turn
+        # Must go before rest of logic because 7 changes selected card
+        if (self.selectedCard.value != 2 and self.selectedCard.value != 3):
+            self.discardCard(discardPile, self.selectedCard)
+            self.removeCardFromHand(self.selectedCard)
+
+            # Finish turn if not playing 7
+            if (self.selectedCard.value != 7):
+                self.turnFinished = True
+
+        if self.selectedCard.value == Card.NAME_TO_VALUE["Ace"]:
+            self.playAce(otherPlayer, discardPile)
+        elif self.selectedCard.value == 2:
+            self.playingTwo = True
+        elif self.selectedCard.value == 3:
+            self.playingThree = True
+        elif self.selectedCard.value == 4:
+            self.playFour(otherPlayer, discardPile)
+        elif self.selectedCard.value == 5:
+            self.playFive(deck, handLimit)
+        elif self.selectedCard.value == 6:
+            self.playSix(otherPlayer, discardPile)
+        elif self.selectedCard.value == 7:
+            self.playSeven(otherPlayer, deck, discardPile)
+    
+    def playPermCard(self, otherPlayer):
+
+        if self.selectedCard.value == Card.NAME_TO_VALUE["Jack"]:
+            self.playingJack = True
+
+        else:
+            self.addCardToPermCards(self.selectedCard)
+            self.removeCardFromHand(self.selectedCard)
+
+            if self.selectedCard.value == 8:
+                otherPlayer.handVisible = True
+            elif self.selectedCard.value == Card.NAME_TO_VALUE["Queen"]:
+                self.queenProtection = True
+            elif self.selectedCard.value == Card.NAME_TO_VALUE["King"]:
+                self.playKing()
+        
+            self.turnFinished = True
+    
+    def playJack(self, otherPlayer, card):
+
+        # Jacked opponent, switch the card over
+        if card in otherPlayer.pointsCards:
+            otherPlayer.removeCardFromPointsCards(card)
+            self.addCardToPointsCards(card)
+
+            if card in otherPlayer.jacks.keys():
+                self.jacks[card] = otherPlayer.jacks[card]
+                self.jacks[card].append(self.selectedCard)
+                otherPlayer.removeCardFromJacks(card)
+            else:
+                self.jacks[card] = [self.selectedCard]
+
+        # Jacked yourself (whoops! That sucks...)
+        else:
+            self.removeCardFromPointsCards(card)
+            otherPlayer.addCardToPointsCards(card)
+            if card in self.jacks.keys():
+                otherPlayer.jacks[card] = self.jacks[card]
+                otherPlayer.jacks[card].append(self.selectedCard)
+                self.removeCardFromJacks(card)
+            else:
+                otherPlayer.jacks[card] = [self.selectedCard]
+        
+        self.removeCardFromHand(self.selectedCard)
+        self.turnFinished = True
+    
+    def playKing(self):
+        kingCount = 0
+        for card in self.permCards:
+            if card.value == Card.NAME_TO_VALUE["King"]:
+                kingCount += 1
+        
+        if kingCount == 1:
+            self.pointsNeededToWin = 14
+        elif kingCount == 2:
+            self.pointsNeededToWin = 10
+        elif kingCount == 3:
+            self.pointsNeededToWin = 7
+        else:
+            self.pointsNeededToWin = 5
+    
+    def scuttle(self, otherPlayer, card, discardPile):
+        # If jacks attached remove
+        for testCard in otherPlayer.jacks.keys():
+            if testCard == card:
+                otherPlayer.removeCardFromJacks(card)
+                break
+        self.discardCard(discardPile, self.selectedCard)
+        self.removeCardFromHand(self.selectedCard)
+        otherPlayer.discardCard(discardPile, card)
+        otherPlayer.removeCardFromPointsCards(card)
+        self.turnFinished = True
+
+    def discardCard(self, discardPile, card):
+        discardPile.append(card)
+
+    def removeCardFromDiscard(self, discardPile, card):
+        """
+        Removes given card from the discard pile
+        """
+        discardPile.remove(card)
+
+    def isTwoInHand(self):
+        """
+        Returns true if there is a two in players hand, else false
+        """
+        for card in self.hand:
+            if card.value == 2:
+                return True
+        return False
+
+    def discardTwo(self, discardPile):
+        """
+        Discards the lowest value two from hand
+        """
+        lowestTwo = self.hand[0]
+
+        for card in self.hand:
+            if card.value == 2:
+                if card < lowestTwo:
+                    lowestTwo = card
+        
+        self.discardCard(discardPile, lowestTwo)
+        self.removeCardFromHand(lowestTwo)
+
+
+    def clearCurrAction(self):
+        self.playingSeven = False
+        self.playingJack = False
+        self.playingTwo = False
+        self.scuttling = False
+    
+    def updateScore(self):
+        self.score = 0
+        for card in self.pointsCards:
+            self.score += card.value
 
 class Cuttle():
+
+    TIME_BETWEEN_TURNS = 2 * 600 # Seconds * Time in milliseconds
+    HAND_LIMIT = 8 # Max limit on number of cards in hand
 
     def __init__(self, playerGoingFirst, dealer):
         """
         Initialize the game board
         """
-
-        # Add the games to the players
-        playerGoingFirst.game = self
-        dealer.game = self
     
         self.currPlayer = playerGoingFirst
         self.otherPlayer = dealer
         self.deck = Deck()
+        self.winner = None
 
-        self.imageBackOfCardInHand = None # TODO IDK WHERE TO KEEP THIS
-        self.imageBackOfCardOnBoard = None # TODO IDK WHERE TO KEEP THIS
+        self.imageBackOfCardInHand = None
+        self.imageBackOfCardOnBoard = None 
+
+        self.promptOtherPointsCards = False
+        self.promptCurrPointsCards = False 
+        self.promptOtherPermCards = False
+        self.promptCurrPermCards = False
+
+        self.cancelButton = False
+        self.cancelButtonObj = None
+        
+        self.pointsButtonObj = None
+        self.permButtonObj = None
+        self.oneOffButtonObj = None
+        self.scuttleButtonObj = None
 
         self.discardPile = [] # list of cards that have been discarded
+        self.showMaxDiscard = 5
+        self.discardBackButtonObj = None
+        self.discardNextButtonObj = None
+
+        self.switchingTurns = False # True if in the middle of switcing turns
+        self.startWaitTime = 0 # Time when waiting for turn switch started
+        self.waitTime = 0 # Amount of time since begun switching turns
+
+        self.askTwo = False # True if two needs to be asked
+        self.twoPlayer = None # Which player would be playing two
+        self.twoYesButton = None
+        self.twoNoButton = None
+        self.twoAsked = False # True if two has been asked, False if it hasn't
     
     def switchPlayerTurn(self):
         """
@@ -110,42 +493,77 @@ class Cuttle():
         hands[1].append(self.deck.drawCardAt(0)) # Add the extra card to the dealer's hand [[dealers hand], [playerGoingFirst]]
         self.currPlayer.hand = hands[0]
         self.otherPlayer.hand = hands[1]
-
-def loadCardImages(game):
-    """
-    Load all of the card images to the game board
-    """
-    if not isinstance(game, Cuttle):
-        raise TypeError(f"""Illegal argument type: 'game' must be of type Cuttle. You tried
-            type {type(game)}""")
-
-    # Load normal card images
-    for card in game.deck.cards:
-        image = pygame.image.load(IMAGES_FILE_DIRECTORY + card.getImageFileName())
-        card.imageInHand = pygame.transform.scale(image, CARD_IN_HAND_DIM)
-        card.imageOnBoard = pygame.transform.scale(image, CARD_ON_BOARD_DIM)
     
-    # Load back of card image
-    # TODO I'm not sure if this is in the right place
-    image = pygame.image.load(IMAGES_FILE_DIRECTORY + BACK_OF_CARD_IMAGE_FILE)
-    game.imageBackOfCardInHand = pygame.transform.scale(image, CARD_IN_HAND_DIM)
-    game.imageBackOfCardOnBoard = pygame.transform.scale(image, CARD_ON_BOARD_DIM)
+    def clearSecondaryPrompts(self):
+        self.promptOtherPointsCards = False
+        self.promptCurrPointsCards = False
+        self.promptOtherPermCards = False
+        self.promptCurrPermCards = False
+        self.cancelButtonObj = None
+        self.cancelButton = False
 
-def drawDeckImage(screen, game):
-    return screen.blit(game.imageBackOfCardOnBoard, DECK_POS)
-
-def drawNumCardsInDeck(screen, game, deckImage):
-    numCardsDeckText = FONT.render(str(game.deck.getNumCards()), True, WHITE)
-    numCardsDeckTextRect = numCardsDeckText.get_rect()
-    numCardsDeckTextRect.center = deckImage.center # Centers text on deck image
-    screen.blit(numCardsDeckText, numCardsDeckTextRect)
+    def clearPrimaryPrompts(self):
+        self.pointsButtonObj = None
+        self.permButtonObj = None
+        self.oneOffButtonObj = None
+        self.scuttleButtonObj = None
     
+    def checkWinner(self):
+        if self.currPlayer.score >= self.currPlayer.pointsNeededToWin:
+            self.winner = self.currPlayer
+        elif self.otherPlayer.score >= self.otherPlayer.pointsNeededToWin:
+            self.winner = self.otherPlayer
+    
+    def promptJackPlaying(self):
+        """
+        Hint to the current player where they can play their Jack
+        """
+
+        # Can be played on opponent points cards
+        if (self.otherPlayer.getNumCardsInPointsCards() > 0 and
+            not self.otherPlayer.queenProtection):
+            self.promptOtherPointsCards = True
+
+        # Can be played on yourself
+        if (self.currPlayer.getNumCardsInPointsCards() > 0 and
+            not self.currPlayer.queenProtection):
+            self.promptCurrPointsCards = True
+        
+        # Turn on the cancel button
+        self.cancelButton = True
+    
+    def promptTwoPlaying(self):
+        """
+        Hint to the current player where they can play their Two
+        """
+
+        # Prompt opponent's perm area if they have an perm cards in it
+        if self.otherPlayer.getNumCardsInPermCards() > 0:
+            self.promptOtherPermCards = True
+        
+        # Prompt opp points area if opp has any jacks in their points area
+        # and no queen protection
+        if len(self.otherPlayer.jacks) > 0 and not self.otherPlayer.queenProtection:
+            self.promptOtherPointsCards = True
+
+        # Prompt curr player's perm area if they have perm cards in it
+        if self.currPlayer.getNumCardsInPermCards() > 0:
+            self.promptCurrPermCards = True
+        
+        # Prompt curr player's points area if they have any jacks
+        # and no queen protection
+        if len(self.currPlayer.jacks) > 0 and not self.currPlayer.queenProtection:
+            self.promptCurrPointsCards = True
+        
+        # Turn on back button
+        self.cancelButton = True
+                    
 
 def play(player0, player1):
 
     # Initialize game window
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = getScreen()
 
     # Create a new game
     game = Cuttle(player0, player1)
@@ -161,66 +579,264 @@ def play(player0, player1):
 
     # Game loop
     while True:
-
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
+            
+            # Nothing can be done besides quiting while waiting for turn to end
+            # or the game is already over
+            elif game.switchingTurns or game.winner is not None:
+                continue
+
             elif event.type == pygame.MOUSEBUTTONUP:
                 # Set the x, y position of the click
                 clickX, clickY = event.pos
+                
+                # Determine if anything relevant was clicked
+                deckClicked = checkDeckClicked(game, clickX, clickY)
+                cancelButtonClicked = checkCancelButtonClicked(game, clickX, clickY)
+                otherPointsCardClicked = checkOtherPointsClicked(game, clickX, clickY)
+                otherPermCardClicked = checkOtherPermClicked(game, clickX, clickY)
+                otherJackCardClicked = checkOtherJackClicked(game, clickX, clickY)
+                currPointsCardClicked = checkCurrPointsClicked(game, clickX, clickY)
+                currPermCardClicked = checkCurrPermClicked(game, clickX, clickY)
+                currJackCardClicked = checkCurrJackClicked(game, clickX, clickY)
+                permButtonClicked = checkPermButtonClicked(game, clickX, clickY)
+                pointsButtonClicked = checkPointsButtonClicked(game, clickX, clickY)
+                oneOffButtonClicked = checkOneOffButtonClicked(game, clickX, clickY)
+                scuttleButtonClicked = checkScuttleButtonClicked(game, clickX, clickY)
+                cardInHandClicked = checkCardInHandClicked(game, clickX, clickY)
+                twoYesClicked = checkTwoYesButtonClicked(game, clickX, clickY)
+                twoNoClicked = checkTwoNoButtonClicked(game, clickX, clickY)
 
-                # Deck clicked, draw card
-                if deckImage.collidepoint(clickX, clickY):
-                    game.currPlayer.drawCard()
+                if game.askTwo:
+
+                    if twoYesClicked:
+                        if game.twoPlayer == game.otherPlayer:
+                            twoInHand = game.otherPlayer.isTwoInHand()
+                            if twoInHand:
+                                # Discard two and switching player being asked about two
+                                game.otherPlayer.discardTwo(game.discardPile)
+                                game.twoPlayer = game.currPlayer
+
+                        elif game.twoPlayer == game.currPlayer:
+                            twoInHand = game.currPlayer.isTwoInHand()
+                            if twoInHand:
+                                game.currPlayer.discardTwo(game.discardPile)
+                                game.twoPlayer = game.otherPlayer
+                    elif twoNoClicked:
+                        if game.twoPlayer == game.currPlayer:
+                            # end their turn without completing action
+                            game.askTwo = False
+                            game.askedTwo = True
+                            game.currPlayer.turnFinished = True
+                        else:
+                            game.askTwo = False
+                            game.twoAsked = True # This will finish curr players one-off
+
+                        
+                        # Reset two things
+                        game.twoPlayer = None
+                        game.askTwo = False
+                        game.twoYesButton = None
+                        game.twoNoButton = None 
+
+                # Currently in the middle of playing a three, you can NOT go back once you start
+                elif game.currPlayer.playingThree:
+                    cardInDiscardClicked = checkCardInDiscardClicked(game, clickX, clickY)
+                    discardBackButtonClicked = checkDiscardBackButtonClicked(game, clickX, clickY)
+                    discardNextButtonClicked = checkDiscardNextButtonClicked(game, clickX, clickY)
+                    
+                    if cardInDiscardClicked:
+                        game.currPlayer.playThree(cardInDiscardClicked, game.discardPile)
+                        game.showMaxDiscard = 5
+                    elif discardBackButtonClicked:
+                        game.showMaxDiscard -= 5
+                    elif discardNextButtonClicked:
+                        game.showMaxDiscard += 5
+
+                # Clicked on cancel button, so cancel usage selection
+                elif cancelButtonClicked:
+                    game.clearSecondaryPrompts()
+                    game.currPlayer.clearCurrAction()
+                
+                # Clicked on deck to draw a card 
+                elif (deckClicked and not game.currPlayer.playingSeven
+                    and (game.currPlayer.getNumCardsInHand() < game.HAND_LIMIT)):
+                    game.currPlayer.drawCard(game.deck)
+                    game.currPlayer.turnFinished = True
+                    game.currPlayer.clearCurrAction()
+                    game.clearPrimaryPrompts()
+                    game.clearSecondaryPrompts()
+                
+                # Change selected card
+                elif (cardInHandClicked is not None and 
+                    not game.currPlayer.playingSeven):
+                    # Deselect cards
+                    if cardInHandClicked == game.currPlayer.selectedCard: 
+                        game.currPlayer.selectedCard = None
+                    # Select card
+                    else:
+                        game.currPlayer.selectedCard = cardInHandClicked
+                    game.currPlayer.clearCurrAction()
+                    game.clearSecondaryPrompts()
+
+                # In the process of playing a two
+                elif game.currPlayer.playingTwo:
+                    # If perm card (jacks included) is clicked, play two
+                    # (unless queen protect, then must be a queen clicked)
+                    if (otherPermCardClicked is not None
+                        and (not game.otherPlayer.queenProtection or
+                        otherPermCardClicked.value == Card.NAME_TO_VALUE["Queen"])):
+                        game.currPlayer.playNormalTwo(game.otherPlayer, 
+                            otherPermCardClicked, game.discardPile)
+                        game.clearSecondaryPrompts()
+                    elif otherJackCardClicked is not None and not game.otherPlayer.queenProtection:
+                        game.currPlayer.playNormalTwo(game.otherPlayer, 
+                            otherJackCardClicked, game.discardPile,isJack=True)
+                        game.clearSecondaryPrompts()
+                    elif (currPermCardClicked is not None
+                        and (not game.currPlayer.queenProtection or
+                        currPermCardClicked.value == Card.NAME_TO_VALUE["Queen"])):
+                        game.currPlayer.playNormalTwo(game.otherPlayer, 
+                            currPermCardClicked, game.discardPile, currPlayer=True)
+                        game.clearSecondaryPrompts()
+                    elif (currJackCardClicked is not None and not game.currPlayer.queenProtection):
+                        game.currPlayer.playNormalTwo(game.otherPlayer, 
+                            currJackCardClicked, game.discardPile, currPlayer=True,
+                            isJack=True)
+                        game.clearSecondaryPrompts()
+
+                # Currently in the process of playing a Jack
+                elif game.currPlayer.playingJack:
+                    # If any point card is clicked and no queen protection, 
+                    # finish playing the jack
+                    if (otherPointsCardClicked is not None and 
+                        not game.otherPlayer.queenProtection):
+                        game.currPlayer.playJack(game.otherPlayer, otherPointsCardClicked)
+                        game.clearSecondaryPrompts()
+                    elif (currPointsCardClicked is not None and 
+                        not game.currPlayer.queenProtection):
+                        game.currPlayer.playJack(game.otherPlayer, currPointsCardClicked)
+                        game.clearSecondaryPrompts()
+
+                # In the process of scuttling
+                elif game.currPlayer.scuttling:
+                    # If any opponent point card is clicked, scuttle
+                    if otherPointsCardClicked is not None:
+                        game.currPlayer.scuttle(game.otherPlayer,
+                             otherPointsCardClicked, game.discardPile)
+                        game.clearSecondaryPrompts()
+
+                # Play the selected card as a permanent effect
+                elif permButtonClicked:
+                    # If Jack then turn on prompts for playing jack
+                    if game.currPlayer.selectedCard.value == Card.NAME_TO_VALUE["Jack"]:
+                        game.promptJackPlaying()
+                    game.currPlayer.playPermCard(game.otherPlayer)
+                    game.clearPrimaryPrompts()
+
+                # Play the selected card for points
+                elif pointsButtonClicked:
+                    game.currPlayer.playPointsCard()
+                    game.clearPrimaryPrompts()
+
+                # Play the selected card as a one-off effect
+                # or if all possible twos have been played or asked to play
+                # and denied
+                elif oneOffButtonClicked or game.twoAsked:
+                    # If two is finished asking, then complete one off
+                    if game.twoAsked:
+                        if game.currPlayer.selectedCard.value == 2:
+                            game.promptTwoPlaying()
+                        game.currPlayer.playOneOffCard(game.otherPlayer, game.deck, 
+                            game.discardPile, game.HAND_LIMIT)
+                        game.clearPrimaryPrompts()
+                        game.askTwo = False
+                        game.twoAsked = False
+                    # Prompt two before completing one-off
+                    else:
+                        game.twoPlayer = game.otherPlayer # First person to ask about two
+                        game.askTwo = True
+                
+                # Play the selected card as a scuttle
+                elif scuttleButtonClicked:
+                    game.currPlayer.scuttling = True
+                    game.promptOtherPointsCards = True
+                    game.cancelButton = True
+                    game.clearPrimaryPrompts()
 
         # Clear screen and set background color
         screen.fill(GREEN)
+
+        # Draw points and perm indicator words
+        drawBoardIndicators(screen)
+
+        # Prepare to switch players if turn is ending
+        if game.currPlayer.turnFinished:
+            game.currPlayer.selectedCard = None # Reset for next turn
+            game.clearPrimaryPrompts() # Reset for next turn
+            game.clearSecondaryPrompts() # Reset for next turn
         
-        # Don't draw the deck if there are no cards left
+        # Draw the deck and card count if cards left
         if game.deck.getNumCards() > 0:
             # Draw deck image
-            deckImage = drawDeckImage(screen, game)
+            drawDeckImage(game, screen)
 
             # Draw number of cards in deck
-            numCardsDeckText = drawNumCardsInDeck(screen, game, deckImage)
+            drawNumCardsInDeck(game, screen)
 
-        # Draw current player's points
-        currPlayerPoints = game.currPlayer.points
-        currPlayerPointsText = FONT.render(str(currPlayerPoints), True, WHITE)
-        # TODO where to put this
+        # Draw players' scores
+        game.currPlayer.updateScore()
+        game.otherPlayer.updateScore()
+        drawPlayersScore(game, screen)
 
-        # Draw opponent (i.e. 'non-current') player's score
-        otherPlayerPoints = game.otherPlayer.points
-        otherPlayerPointsText = FONT.render(str(otherPlayerPoints), True, WHITE)
-        # TODO where to put this
-
-        # Draw top card in discard pile
-        if game.getNumCardsInDiscard() > 0:
-            lastDiscarded = game.getLastDiscarded()
-            screen.blit(lastDiscarded.imageOnBoard, DISCARD_POS)
-
-        # Draw number of cards in discard pile
+        # Draw top card in discard pile, if any have been discarded
+        numCardsInDiscard = game.getNumCardsInDiscard()
+        if numCardsInDiscard > 0:
+            if not game.currPlayer.playingThree:
+                drawDiscardPile(game, screen)
+            else:
+                game.clearPrimaryPrompts()
+                drawCardsInDiscard(game, screen)
+                drawDiscardButtons(game, screen)
         
-        # Draw current player's hand
-        width = int(CURR_PLAYER_HAND_X ) - ((SCREEN_WIDTH * 0.05) * (game.currPlayer.getNumCardsInHand() * .5))
+        # Draw players' hands
+        drawPlayersHands(game, screen)
 
-        for card in game.currPlayer.hand:
-            screen.blit(card.imageInHand, (width, CURR_PLAYER_HAND_Y))
-            width += int(SCREEN_WIDTH * .05) 
+        # Prompt for card usage if selected and not playing three
+        if (game.currPlayer.selectedCard is not None
+            and not game.currPlayer.playingThree):
+            promptCardUsage(game, screen)
         
-        # Draw the other (i.e. 'non-current') player's hand face down
-        width = int(OTHER_PLAYER_HAND_X ) - ((SCREEN_WIDTH * 0.05) * (game.otherPlayer.getNumCardsInHand() * .5))
+        # Draw players' points cards
+        drawPointsCards(game, screen)
 
-        for card in game.otherPlayer.hand:
-            screen.blit(game.imageBackOfCardInHand, (width, OTHER_PLAYER_HAND_Y))
-            width += int(SCREEN_WIDTH * .05)
+        # Draw players' permanent effect cards
+        drawPermCards(game, screen)
+
+        # Draw players' jacks
+        drawJacks(game, screen)
+
+        # Display two question if needed
+        if game.askTwo:
+            drawTwoResponsePrompt(game, screen, game.twoPlayer)
+
+        if game.winner is not None:
+            if game.winner == game.currPlayer:
+                drawWinner(game, screen)
+        elif game.switchingTurns:
+            drawSwitchingTurns(game, screen)
+            game.waitTime = pygame.time.get_ticks() - game.startWaitTime
+            if game.waitTime > game.TIME_BETWEEN_TURNS:
+                game.switchingTurns = False
+                game.switchPlayerTurn()
+        elif game.currPlayer.turnFinished:
+            game.switchingTurns = True
+            game.startWaitTime = pygame.time.get_ticks()
+            game.currPlayer.turnFinished = False # Reset for next turn
+            game.currPlayer.clearCurrAction()
+            game.checkWinner()
         
-        # Draw current player's point cards
-
-        # Draw other player's point cards
-
-        # Draw current player's permanent effect cards
-
-        # Draw other player's permanent effect cards
-
         pygame.display.flip()

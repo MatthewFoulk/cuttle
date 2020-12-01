@@ -9,10 +9,11 @@ class Card():
     Class for implimenting a playing card from a standard deck.
     Each card has both a suit and value.
     """
-
+    
     SUITS = {0: "Clubs", 1: "Diamonds", 2: "Hearts", 3: "Spades"}
     VALUES = {1: "Ace", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7",
             8: "8", 9: "9", 10: "10", 11: "Jack", 12: "Queen", 13: "King"}
+    NAME_TO_VALUE = {"Ace": 1, "Jack": 11, "Queen": 12, "King": 13}
 
     def __init__(self, value, suit):
         """
@@ -41,6 +42,7 @@ class Card():
         self.suit = suit
         self.imageInHand = None
         self.imageOnBoard = None
+        self.imageObj = None
     
     def __str__(self):
         """
@@ -72,6 +74,9 @@ class Card():
                 return True
         return False
     
+    def __hash__(self):
+        return hash((self.value, self.suit))
+    
     def getImageFileName(self):
         """
         Returns the name of the image file representing this card
@@ -89,6 +94,8 @@ class Deck():
         Initialize a standard 52 card deck.
         """
         self.cards = list()
+        self.image = None
+        self.imageObj = None
         for suit in Card.SUITS.keys():
             for value in Card.VALUES.keys():
                 self.cards.append(Card(value, suit))
