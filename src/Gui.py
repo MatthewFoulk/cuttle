@@ -9,10 +9,10 @@ from CardGame import *
 
 # Directory where images for the game board are stored
 # e.g. card images
-IMAGES_FILE_DIRECTORY = "images/"
+IMAGES_FILE_DIRECTORY = "src/images/"
 
 # Directory where fonts are stored
-FONTS_DIRECTORY = "fonts/"
+FONTS_DIRECTORY = "src/fonts/"
 
 # Back of card image file name
 BACK_OF_CARD_IMAGE_FILE = "RedBackVertical.gif"
