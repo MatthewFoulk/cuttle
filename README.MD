@@ -7,7 +7,7 @@ Cuttle is a 2-player combat card game played using a standard 52 card deck. The 
 
 This implimentation of Cuttle was created using [PyGame](https://www.pygame.org/news).
 
-![](header.png)
+![](cuttle.gif)
 
 ## Rules
 
@@ -15,7 +15,7 @@ Read the rules for Cuttle on [Pagat.com](https://www.pagat.com/combat/cuttle.htm
 
 ## Installation
 
-First, start by closing the repository:
+First, start by cloning the repository:
 
 ```
 git clone https://github.com/MatthewFoulk/cuttle.git
@@ -70,7 +70,7 @@ Distributed under the MIT license. See ``LICENSE`` for more information.
 4. Push to the branch (`git push origin feature/fooBar`)
 5. Create a new Pull Request
 
-## Extra Info
+## Extra
 
 Start Date: 11/24/2020  
 End Date: 12/1/2020  
