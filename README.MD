@@ -1,5 +1,4 @@
 # Cuttle
-> Fun 2-player card game using PyGame
 
 Cuttle is a 2-player combat card game played using a standard 52 card deck. The aim is to be the first build a layout worth at least 21 points. Cards can be used for their point value, or to attack your opponent's layout by destroying or capturing cards.
 
